@@ -28,6 +28,7 @@ export default function Home() {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [isLoaded, setIsLoaded] = useState(false);
+  const [editingExpenseId, setEditingExpenseId] = useState<number | null>(null);
 
   useEffect(() => {
     const savedExpenses = localStorage.getItem("expenses");
@@ -131,15 +132,33 @@ export default function Home() {
       return;
     }
 
-    const newExpense: Expense = {
-      id: Date.now(),
-      title: title.trim(),
-      amount: numericAmount,
-      category,
-      date,
-    };
+    if (editingExpenseId !== null) {
+      setExpenses((prev) =>
+        prev.map((expense) =>
+          expense.id === editingExpenseId
+            ? {
+                ...expense,
+                title: title.trim(),
+                amount: numericAmount,
+                category,
+                date,
+              }
+            : expense
+        )
+      );
+      setEditingExpenseId(null);
+    } else {
+      const newExpense: Expense = {
+        id: Date.now(),
+        title: title.trim(),
+        amount: numericAmount,
+        category,
+        date,
+      };
 
-    setExpenses((prev) => [newExpense, ...prev]);
+      setExpenses((prev) => [newExpense, ...prev]);
+    }
+
     setTitle("");
     setAmount("");
     setCategory("Food");
@@ -148,6 +167,26 @@ export default function Home() {
 
   const handleDeleteExpense = (id: number) => {
     setExpenses((prev) => prev.filter((expense) => expense.id !== id));
+
+    if (editingExpenseId === id) {
+      handleCancelEdit();
+    }
+  };
+
+  const handleEditExpense = (expense: Expense) => {
+    setTitle(expense.title);
+    setAmount(expense.amount.toString());
+    setCategory(expense.category);
+    setDate(expense.date);
+    setEditingExpenseId(expense.id);
+  };
+
+  const handleCancelEdit = () => {
+    setTitle("");
+    setAmount("");
+    setCategory("Food");
+    setDate("");
+    setEditingExpenseId(null);
   };
 
   const handleClearAll = () => {
@@ -243,10 +282,12 @@ export default function Home() {
           <div className="rounded-3xl bg-white p-6 shadow-md lg:col-span-2">
             <div className="mb-4">
               <h2 className="text-xl font-semibold text-gray-900">
-                Add New Expense
+                {editingExpenseId !== null ? "Edit Expense" : "Add New Expense"}
               </h2>
               <p className="mt-1 text-sm text-gray-500">
-                Enter expense details below.
+                {editingExpenseId !== null
+                  ? "Update the selected expense details."
+                  : "Enter expense details below."}
               </p>
             </div>
 
@@ -286,12 +327,24 @@ export default function Home() {
                 className="rounded-xl border border-gray-300 px-4 py-3 outline-none focus:border-gray-500"
               />
 
-              <button
-                type="submit"
-                className="rounded-xl bg-black px-4 py-3 font-medium text-white transition hover:opacity-90 md:col-span-2"
-              >
-                Add Expense
-              </button>
+              <div className="md:col-span-2 flex gap-3">
+                <button
+                  type="submit"
+                  className="flex-1 rounded-xl bg-black px-4 py-3 font-medium text-white transition hover:opacity-90"
+                >
+                  {editingExpenseId !== null ? "Update Expense" : "Add Expense"}
+                </button>
+
+                {editingExpenseId !== null && (
+                  <button
+                    type="button"
+                    onClick={handleCancelEdit}
+                    className="rounded-xl border border-gray-300 px-4 py-3 font-medium text-gray-700 transition hover:bg-gray-100"
+                  >
+                    Cancel
+                  </button>
+                )}
+              </div>
             </form>
           </div>
 
@@ -410,6 +463,12 @@ export default function Home() {
                     <span className="text-lg font-bold text-gray-900">
                       ${expense.amount.toFixed(2)}
                     </span>
+                    <button
+                      onClick={() => handleEditExpense(expense)}
+                      className="rounded-lg bg-blue-500 px-3 py-2 text-sm font-medium text-white transition hover:bg-blue-600"
+                    >
+                      Edit
+                    </button>
                     <button
                       onClick={() => handleDeleteExpense(expense.id)}
                       className="rounded-lg bg-red-500 px-3 py-2 text-sm font-medium text-white transition hover:bg-red-600"

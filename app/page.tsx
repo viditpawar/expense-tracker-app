@@ -5,7 +5,6 @@ import {
   BarChart,
   Bar,
   CartesianGrid,
-  ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
@@ -64,6 +63,35 @@ export default function Home() {
 
   const recentExpenseTitle = useMemo(() => {
     return expenses.length > 0 ? expenses[0].title : "No recent expense";
+  }, [expenses]);
+
+    const highestExpense = useMemo(() => {
+    if (expenses.length === 0) return null;
+
+    return expenses.reduce((highest, current) =>
+      current.amount > highest.amount ? current : highest
+    );
+  }, [expenses]);
+
+  const averageExpense = useMemo(() => {
+    if (expenses.length === 0) return 0;
+
+    return total / expenses.length;
+  }, [expenses, total]);
+
+  const topCategory = useMemo(() => {
+    if (expenses.length === 0) return "No data";
+
+    const categoryTotals: Record<string, number> = {};
+
+    expenses.forEach((expense) => {
+      categoryTotals[expense.category] =
+        (categoryTotals[expense.category] || 0) + expense.amount;
+    });
+
+    return Object.entries(categoryTotals).reduce((top, current) =>
+      current[1] > top[1] ? current : top
+    )[0];
   }, [expenses]);
 
   const monthlyChartData = useMemo(() => {
@@ -158,7 +186,7 @@ export default function Home() {
           </div>
         </header>
 
-        <section className="mb-8 grid gap-6 md:grid-cols-3">
+        <section className="mb-8 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
           <div className="rounded-3xl bg-white p-6 shadow-md">
             <p className="text-sm font-medium text-gray-500">Total Spent</p>
             <p className="mt-3 text-3xl font-bold text-green-600">
@@ -177,6 +205,36 @@ export default function Home() {
             <p className="text-sm font-medium text-gray-500">Total Entries</p>
             <p className="mt-3 text-3xl font-bold text-gray-900">
               {expenses.length}
+            </p>
+          </div>
+
+          <div className="rounded-3xl bg-white p-6 shadow-md">
+            <p className="text-sm font-medium text-gray-500">Highest Expense</p>
+            <p className="mt-3 text-2xl font-bold text-red-500">
+              {highestExpense ? `$${highestExpense.amount.toFixed(2)}` : "$0.00"}
+            </p>
+            <p className="mt-2 text-sm text-gray-500">
+              {highestExpense ? highestExpense.title : "No expenses added yet"}
+            </p>
+          </div>
+
+          <div className="rounded-3xl bg-white p-6 shadow-md">
+            <p className="text-sm font-medium text-gray-500">Average Expense</p>
+            <p className="mt-3 text-2xl font-bold text-purple-600">
+              ${averageExpense.toFixed(2)}
+            </p>
+            <p className="mt-2 text-sm text-gray-500">
+              Based on all recorded expenses
+            </p>
+          </div>
+
+          <div className="rounded-3xl bg-white p-6 shadow-md">
+            <p className="text-sm font-medium text-gray-500">Top Category</p>
+            <p className="mt-3 text-2xl font-bold text-orange-500">
+              {topCategory}
+            </p>
+            <p className="mt-2 text-sm text-gray-500">
+              Category with the highest total spend
             </p>
           </div>
         </section>
@@ -293,16 +351,19 @@ export default function Home() {
               </p>
             </div>
           ) : (
-            <div className="h-80 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={monthlyChartData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="month" />
-                  <YAxis />
-                  <Tooltip />
-                  <Bar dataKey="totalAmount" radius={[8, 8, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
+            <div className="overflow-x-auto">
+              <BarChart
+                width={800}
+                height={320}
+                data={monthlyChartData}
+                margin={{ top: 10, right: 20, left: 10, bottom: 10 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="month" />
+                <YAxis />
+                <Tooltip />
+                <Bar dataKey="totalAmount" radius={[8, 8, 0, 0]} />
+              </BarChart>
             </div>
           )}
         </section>

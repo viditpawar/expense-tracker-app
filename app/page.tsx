@@ -1,6 +1,15 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import {
+  BarChart,
+  Bar,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 
 type Expense = {
   id: number;
@@ -55,6 +64,28 @@ export default function Home() {
 
   const recentExpenseTitle = useMemo(() => {
     return expenses.length > 0 ? expenses[0].title : "No recent expense";
+  }, [expenses]);
+
+  const monthlyChartData = useMemo(() => {
+    const monthlyTotals: Record<string, number> = {};
+
+    expenses.forEach((expense) => {
+      if (!expense.date) return;
+
+      const dateObject = new Date(expense.date);
+      const monthLabel = dateObject.toLocaleString("en-US", {
+        month: "short",
+        year: "numeric",
+      });
+
+      monthlyTotals[monthLabel] =
+        (monthlyTotals[monthLabel] || 0) + expense.amount;
+    });
+
+    return Object.entries(monthlyTotals).map(([month, totalAmount]) => ({
+      month,
+      totalAmount,
+    }));
   }, [expenses]);
 
   const handleAddExpense = (e: React.FormEvent<HTMLFormElement>) => {
@@ -240,6 +271,40 @@ export default function Home() {
               </button>
             </div>
           </div>
+        </section>
+
+        <section className="mb-8 rounded-3xl bg-white p-6 shadow-md">
+          <div className="mb-4">
+            <h2 className="text-xl font-semibold text-gray-900">
+              Monthly Spending Overview
+            </h2>
+            <p className="mt-1 text-sm text-gray-500">
+              A quick view of how much you spent each month.
+            </p>
+          </div>
+
+          {monthlyChartData.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-gray-300 bg-gray-50 px-6 py-10 text-center">
+              <h3 className="text-lg font-semibold text-gray-800">
+                No chart data available yet
+              </h3>
+              <p className="mt-2 text-sm text-gray-500">
+                Add expenses with dates to see your monthly spending chart.
+              </p>
+            </div>
+          ) : (
+            <div className="h-80 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={monthlyChartData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="month" />
+                  <YAxis />
+                  <Tooltip />
+                  <Bar dataKey="totalAmount" radius={[8, 8, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
         </section>
 
         <section className="rounded-3xl bg-white p-6 shadow-md">
